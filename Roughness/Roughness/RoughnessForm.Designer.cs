@@ -153,6 +153,7 @@
             // 
             // RoughnessForm
             // 
+            this.AllowDrop = true;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(530, 306);
@@ -176,6 +177,8 @@
             this.Name = "RoughnessForm";
             this.Text = "DEM转糙率工具";
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.ExitApp);
+            this.DragDrop += new System.Windows.Forms.DragEventHandler(this.DragToLocateFile);
+            this.DragEnter += new System.Windows.Forms.DragEventHandler(this.PreDragDrop);
             this.ResumeLayout(false);
             this.PerformLayout();
 
