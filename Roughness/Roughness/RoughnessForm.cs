@@ -20,6 +20,7 @@ namespace Roughness
         }
         Thread BgCal;
         bool IsProcessing = false;
+        string OutPutFileName;
 
         //用户选择文件路径
         private void GetFilePath(object sender, EventArgs e)
@@ -55,24 +56,57 @@ namespace Roughness
         {
             try
             {
-                if (sender == ConvertButton)
+               
+                StartConvertButton.Enabled = false; //临时禁用转换按钮
+                
+                if(String.IsNullOrWhiteSpace(FilePathTextBox.Text)) //检查文件路径
                 {
-                    BgCal = new Thread(Calc)
-                    {
-                        Priority = ThreadPriority.Normal
-                    };
-                    BgCal.Start();  //在新线程上执行转换任务，不会卡界面
-                    StartProcessing();
+                    throw new NoNullAllowedException("请输入文件路径！");
                 }
-                if (sender == CancelButton)
+                if (String.IsNullOrWhiteSpace(RoughnessTextBox.Text) || String.IsNullOrWhiteSpace(NoDataValueTextBox.Text)) //检查数值框
                 {
-                    if (BgCal.IsAlive)
+                    throw new NoNullAllowedException("输入的糙率或NoData值不正确！");
+                }
+
+                //输出文件路径及名称
+                OutPutFileName = FilePathTextBox.Text.Substring(0, FilePathTextBox.Text.LastIndexOf('.')) + "_out.asc";
+                if (sender == StartConvertButton)    //转换按钮事件
+                {
+                    //文件覆盖检查
+                    if (File.Exists(OutPutFileName))
+                    {  
+                        if(MessageBox.Show(FilePathTextBox.Text+"已存在，是否覆盖？","",MessageBoxButtons.OKCancel, MessageBoxIcon.Warning)==DialogResult.OK)
+                        {
+                            StartThread();
+                        }
+                        else
+                        {
+                            StopProcessing();
+                        }
+                    }
+                    else
                     {
-                        BgCal.Abort();
-                        StopProcessing();
-                        ProgressLabel.Text = "你烟了";
+                        StartThread();
+                    }  
+                }
+                if (sender == CancelConvertButton) //取消按钮事件
+                {
+                    if (MessageBox.Show("是否取消当前转换任务？", "", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) == DialogResult.OK)
+                    {
+                        if (BgCal.IsAlive)
+                        {
+                            BgCal.Abort();
+                            StopProcessing();
+                            ProgressLabel.Text = "你烟了";
+                            ConvertProgressBar.ForeColor = Color.Red;
+                        }
                     }
                 }
+            }
+            catch (NoNullAllowedException err)
+            {
+                MessageBox.Show(err.Message);
+                StopProcessing();
             }
             catch (Exception err)
             {
@@ -81,21 +115,29 @@ namespace Roughness
             }
         }
 
-        //多线程调用方法
+        //开始转换线程方法
+        private void StartThread()
+        {
+            BgCal = new Thread(Calc)
+            {
+                Priority = ThreadPriority.Normal
+            };
+            BgCal.Start();  //在新线程上执行转换任务，不会卡界面
+            StartProcessing();
+        }
+
+        //转换线程调用方法
         private void Calc()
         {
             try
             {
-                if (String.IsNullOrWhiteSpace(RoughnessTextBox.Text) || String.IsNullOrWhiteSpace(NoDataValueTextBox.Text))
-                {
-                    throw new FormatException("输入的糙率或NoData值不正确！");
-                }
-                string CurrentLine = null;
-                double CLine = 0;
-                double TLine = 0;
+                string CurrentLine = null;  //当前行字符串
+                double CLine = 0;   //当前行指示器
+                double TLine = 0;   //总行数指示器
 
                 using (StreamReader sr = new StreamReader(FilePathTextBox.Text))
                 {
+                    //读取行数及跳过文件头
                     for (int i = 0; i < 6; i++)
                     {
                         CurrentLine = sr.ReadLine();
@@ -104,16 +146,18 @@ namespace Roughness
                             TLine = Convert.ToInt32(CurrentLine.Substring(14).Replace("\r\n", String.Empty)); //自动读取行数
                         }
                     }
-                    using (StreamWriter sw = new StreamWriter(FilePathTextBox.Text.Replace(".asc", "_out.asc")))
+
+                    //写文件头
+                    var OutPutEncoding = new UTF8Encoding(false);
+                    using (StreamWriter sw = new StreamWriter(OutPutFileName, false, OutPutEncoding))
                     {
                         sw.Write(FileContentRichTextBox.Text);
                     }
-
                     while ((CurrentLine = sr.ReadLine()) != null)   //读取直到文档末尾
                     {
-                        string[] DEMValues = CurrentLine.Split(' ');
+                        string[] DEMValues = CurrentLine.Split(' ');    //拆分当前行
                         string Converted;
-                        for (int j = 0; j < DEMValues.Length - 1; j++)
+                        for (long j = 0; j < DEMValues.Length - 1; j++)
                         {
                             if (DEMValues[j] != NoDataValueTextBox.Text)
                             {
@@ -121,12 +165,13 @@ namespace Roughness
                             }
                         }
                         Converted = String.Join(" ", DEMValues);
-                        Converted += " ";
-                        using (StreamWriter sw = new StreamWriter(FilePathTextBox.Text.Replace(".asc", "_out.asc"), true))
+                        //Converted += " ";
+
+                        using (StreamWriter sw = new StreamWriter(OutPutFileName, true, OutPutEncoding))
                         {
                             sw.WriteLine(Converted);
                             CLine++;
-                            ConvertProgressBar.Value = (CLine / TLine) * 100 <= 100 ? Convert.ToInt32((CLine / TLine) * 100) : 50;
+                            ConvertProgressBar.Value = (CLine / TLine) * 100 <= 100 ? Convert.ToInt32((CLine / TLine) * 100) : 100;
                             ProgressLabel.Text = "Processing: " + CLine.ToString() + " / " + TLine.ToString();
                             this.Refresh();
                             if (CLine >= TLine)
@@ -137,13 +182,13 @@ namespace Roughness
                     }
                 }
             }
-            catch (Exception err)
+            catch(ThreadAbortException)
             {
-                MessageBox.Show(err.Message);
                 StopProcessing();
             }
         }
 
+        //获取文件头
         private void GetFileHead()
         {
             FileContentRichTextBox.Clear();
@@ -163,20 +208,17 @@ namespace Roughness
             }
         }
 
-        private void ShowAuthor(object sender, EventArgs e)
-        {
-            MessageBox.Show("DEM转糙率程序，由Rikakoist制作。更多工具请访问https://github.com/Rikakoist。", "2333~", MessageBoxButtons.OK, MessageBoxIcon.Question);
-        }
-
+        //设置拖放模式
         private void PreDragDrop(object sender, DragEventArgs e)
         {
-            e.Effect = DragDropEffects.Copy;
+             e.Effect = DragDropEffects.Copy;
         }
 
+        //拖放文件获取路径
         private void DragToLocateFile(object sender, DragEventArgs e)
         {
             try
-            {
+            {             
                 if (!IsProcessing)
                 {
                     string[] files = e.Data.GetData(DataFormats.FileDrop) as string[];
@@ -203,26 +245,41 @@ namespace Roughness
             }
         }
 
+        //开始处理的按钮状态
         private void StartProcessing()
         {
-            ConvertButton.Enabled = false;
-            CancelButton.Enabled = true;
             IsProcessing = true;
-            FilePathButton.Enabled = false;
-            FilePathTextBox.Enabled = false;
-            NoDataValueTextBox.Enabled = false;
-            RoughnessTextBox.Enabled = false;
+            foreach (Control C in this.Controls)
+            {
+                if (C.GetType().Name.Equals("TextBox") || C.GetType().Name.Equals("Button"))
+                {
+                    C.Enabled = false;
+                    C.Cursor = Cursors.No;
+                }
+            }
+            CancelConvertButton.Enabled = true;
+            CancelConvertButton.Cursor = Cursors.Hand;
         }
 
+        //停止处理的按钮状态
         private void StopProcessing()
         {
-            ConvertButton.Enabled = true;
-            CancelButton.Enabled = false;
             IsProcessing = false;
-            FilePathButton.Enabled = true;
-            FilePathTextBox.Enabled = true;
-            NoDataValueTextBox.Enabled = true;
-            RoughnessTextBox.Enabled = true;
+            foreach (Control C in this.Controls)
+            {
+                if (C.GetType().Name.Equals("TextBox") || C.GetType().Name.Equals("Button"))
+                {
+                    C.Enabled = true;
+                    C.Cursor = Cursors.Hand;
+                }
+            }
+            CancelConvertButton.Enabled = false;
+            CancelConvertButton.Cursor = Cursors.No;
+        }
+
+        private void ShowAuthor(object sender, EventArgs e)
+        {
+            MessageBox.Show("DEM转糙率程序，由Rikakoist制作。更多工具请访问https://github.com/Rikakoist。", "2333~", MessageBoxButtons.OK, MessageBoxIcon.Question);
         }
     }
 }

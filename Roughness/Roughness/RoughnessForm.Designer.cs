@@ -33,18 +33,19 @@
             this.FilePathLabel = new System.Windows.Forms.Label();
             this.FilePathTextBox = new System.Windows.Forms.TextBox();
             this.FileContentRichTextBox = new System.Windows.Forms.RichTextBox();
-            this.ConvertButton = new System.Windows.Forms.Button();
+            this.StartConvertButton = new System.Windows.Forms.Button();
             this.ProgressLabel = new System.Windows.Forms.Label();
             this.NoDataValueTextBox = new System.Windows.Forms.TextBox();
             this.RoughnessLabel = new System.Windows.Forms.Label();
             this.RoughnessTextBox = new System.Windows.Forms.TextBox();
             this.ConvertProgressBar = new System.Windows.Forms.ProgressBar();
             this.NoDataLabel = new System.Windows.Forms.Label();
-            this.CancelButton = new System.Windows.Forms.Button();
+            this.CancelConvertButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // FilePathButton
             // 
+            this.FilePathButton.Cursor = System.Windows.Forms.Cursors.Hand;
             this.FilePathButton.Location = new System.Drawing.Point(443, 31);
             this.FilePathButton.Name = "FilePathButton";
             this.FilePathButton.Size = new System.Drawing.Size(75, 23);
@@ -79,15 +80,16 @@
             this.FileContentRichTextBox.TabStop = false;
             this.FileContentRichTextBox.Text = "";
             // 
-            // ConvertButton
+            // StartConvertButton
             // 
-            this.ConvertButton.Location = new System.Drawing.Point(44, 206);
-            this.ConvertButton.Name = "ConvertButton";
-            this.ConvertButton.Size = new System.Drawing.Size(145, 37);
-            this.ConvertButton.TabIndex = 4;
-            this.ConvertButton.Text = "开始转换！";
-            this.ConvertButton.UseVisualStyleBackColor = true;
-            this.ConvertButton.Click += new System.EventHandler(this.GetR);
+            this.StartConvertButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.StartConvertButton.Location = new System.Drawing.Point(44, 206);
+            this.StartConvertButton.Name = "StartConvertButton";
+            this.StartConvertButton.Size = new System.Drawing.Size(145, 37);
+            this.StartConvertButton.TabIndex = 4;
+            this.StartConvertButton.Text = "开始转换！";
+            this.StartConvertButton.UseVisualStyleBackColor = true;
+            this.StartConvertButton.Click += new System.EventHandler(this.GetR);
             // 
             // ProgressLabel
             // 
@@ -97,6 +99,7 @@
             this.ProgressLabel.Size = new System.Drawing.Size(127, 13);
             this.ProgressLabel.TabIndex = 4;
             this.ProgressLabel.Text = "小老弟，你怎么回事？";
+            this.ProgressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             this.ProgressLabel.Click += new System.EventHandler(this.ShowAuthor);
             // 
             // NoDataValueTextBox
@@ -140,16 +143,17 @@
             this.NoDataLabel.TabIndex = 4;
             this.NoDataLabel.Text = "NoData值";
             // 
-            // CancelButton
+            // CancelConvertButton
             // 
-            this.CancelButton.Enabled = false;
-            this.CancelButton.Location = new System.Drawing.Point(44, 249);
-            this.CancelButton.Name = "CancelButton";
-            this.CancelButton.Size = new System.Drawing.Size(145, 37);
-            this.CancelButton.TabIndex = 5;
-            this.CancelButton.Text = "取消操作";
-            this.CancelButton.UseVisualStyleBackColor = true;
-            this.CancelButton.Click += new System.EventHandler(this.GetR);
+            this.CancelConvertButton.Cursor = System.Windows.Forms.Cursors.No;
+            this.CancelConvertButton.Enabled = false;
+            this.CancelConvertButton.Location = new System.Drawing.Point(44, 249);
+            this.CancelConvertButton.Name = "CancelConvertButton";
+            this.CancelConvertButton.Size = new System.Drawing.Size(145, 37);
+            this.CancelConvertButton.TabIndex = 5;
+            this.CancelConvertButton.Text = "取消操作";
+            this.CancelConvertButton.UseVisualStyleBackColor = true;
+            this.CancelConvertButton.Click += new System.EventHandler(this.GetR);
             // 
             // RoughnessForm
             // 
@@ -163,8 +167,8 @@
             this.Controls.Add(this.NoDataValueTextBox);
             this.Controls.Add(this.NoDataLabel);
             this.Controls.Add(this.ProgressLabel);
-            this.Controls.Add(this.CancelButton);
-            this.Controls.Add(this.ConvertButton);
+            this.Controls.Add(this.CancelConvertButton);
+            this.Controls.Add(this.StartConvertButton);
             this.Controls.Add(this.FileContentRichTextBox);
             this.Controls.Add(this.FilePathTextBox);
             this.Controls.Add(this.FilePathLabel);
@@ -190,14 +194,14 @@
         private System.Windows.Forms.Label FilePathLabel;
         private System.Windows.Forms.TextBox FilePathTextBox;
         private System.Windows.Forms.RichTextBox FileContentRichTextBox;
-        private System.Windows.Forms.Button ConvertButton;
+        private System.Windows.Forms.Button StartConvertButton;
         private System.Windows.Forms.Label ProgressLabel;
         private System.Windows.Forms.TextBox NoDataValueTextBox;
         private System.Windows.Forms.Label RoughnessLabel;
         private System.Windows.Forms.TextBox RoughnessTextBox;
         private System.Windows.Forms.ProgressBar ConvertProgressBar;
         private System.Windows.Forms.Label NoDataLabel;
-        private System.Windows.Forms.Button CancelButton;
+        private System.Windows.Forms.Button CancelConvertButton;
     }
 }
 
