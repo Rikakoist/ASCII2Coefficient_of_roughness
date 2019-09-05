@@ -9,6 +9,11 @@ Convert DEM (ASCII) to Coefficient of roughness
 5. Wait until process is done or click "取消操作" to cancel current process.
 
 ## Update logs
+### 09/06/2019
+- Optimized interactive experience.
+- Added overwrite confirmation when file that has same name already exists.
+- Added cancel confirmation.
+
 ### 09/04/2019
 - Added drag-drop function.
 - Some controls will be disabled while processing.
