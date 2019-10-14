@@ -19,6 +19,7 @@ namespace Roughness
             InitializeComponent();
         }
         Thread BgCal;
+        List<string[]> ReplaceList = new List<string[]>();
         bool IsProcessing = false;
         string OutPutFileName;
 
@@ -63,13 +64,38 @@ namespace Roughness
                 {
                     throw new NoNullAllowedException("请输入文件路径！");
                 }
-                if (String.IsNullOrWhiteSpace(RoughnessTextBox.Text) || String.IsNullOrWhiteSpace(NoDataValueTextBox.Text)) //检查数值框
-                {
-                    throw new NoNullAllowedException("输入的糙率或NoData值不正确！");
-                }
-
-                //输出文件路径及名称
                 OutPutFileName = FilePathTextBox.Text.Substring(0, FilePathTextBox.Text.LastIndexOf('.')) + "_out.asc";
+                switch (ModeTabControl.SelectedIndex)
+                {
+                    case 0:
+                        {
+                            if (String.IsNullOrWhiteSpace(RoughnessTextBox.Text) || String.IsNullOrWhiteSpace(NoDataValueTextBox.Text)) //检查数值框
+                            {
+                                throw new NoNullAllowedException("输入的糙率或NoData值不正确！");
+                            }
+                            break;
+                        }
+                    case 1:
+                        {
+                            if(ValuesDataGridView.RowCount<2)
+                            {
+                                throw new Exception("无数据。");
+                            }
+                            ReplaceList.Clear();
+                            for (int i = 0; i < ValuesDataGridView.RowCount - 1; i++)
+                            {
+                                string[] ReplaceItem = new string[2] { ValuesDataGridView[0, i].Value.ToString(), ValuesDataGridView[2, i].Value.ToString() };
+                                ReplaceList.Add(ReplaceItem);
+                            }
+
+                            break;
+                        }
+                    default:
+                        {
+                            throw new Exception("???");
+                        }
+                }
+                //输出文件路径及名称
                 if (sender == StartConvertButton)    //转换按钮事件
                 {
                     //文件覆盖检查
@@ -153,22 +179,52 @@ namespace Roughness
                     {
                         sw.Write(FileContentRichTextBox.Text);
                     }
-                    while ((CurrentLine = sr.ReadLine()) != null)   //读取直到文档末尾
+                    using (StreamWriter sw = new StreamWriter(OutPutFileName, true, OutPutEncoding))
                     {
-                        string[] DEMValues = CurrentLine.Split(' ');    //拆分当前行
-                        string Converted;
-                        for (long j = 0; j < DEMValues.Length - 1; j++)
-                        {
-                            if (DEMValues[j] != NoDataValueTextBox.Text)
-                            {
-                                DEMValues[j] = RoughnessTextBox.Text;
-                            }
-                        }
-                        Converted = String.Join(" ", DEMValues);
-                        //Converted += " ";
 
-                        using (StreamWriter sw = new StreamWriter(OutPutFileName, true, OutPutEncoding))
+                        while ((CurrentLine = sr.ReadLine()) != null)   //读取直到文档末尾
                         {
+                            string[] DEMValues = CurrentLine.Split(' ');    //拆分当前行
+                            string Converted;
+                            for (long j = 0; j < DEMValues.Length - 1; j++)
+                            {
+                                switch (ModeTabControl.SelectedIndex)
+                                {
+                                    case 0:
+                                        {
+                                            if (DEMValues[j] != NoDataValueTextBox.Text)
+                                            {
+                                                DEMValues[j] = RoughnessTextBox.Text;
+                                            }
+                                            break;
+                                        }
+                                    case 1:
+                                        {
+                                            if (DEMValues[j] == NoDataValueTextBox.Text)
+                                            {
+                                                continue;
+                                            }
+                                            int i;
+                                            for (i = 0; i < ReplaceList.Count; i++)
+                                            {
+                                                if (DEMValues[j] == ReplaceList[i][0])
+                                                {
+                                                    DEMValues[j] = ReplaceList[i][1];
+                                                    break;
+                                                }
+                                            }
+                                            if (i == ReplaceList.Count)
+                                            {
+                                                DEMValues[j] = "0.03";
+                                            }
+                                            break;
+                                        }
+                                }
+
+                            }
+                            Converted = String.Join(" ", DEMValues);
+                            //Converted += " ";
+
                             sw.WriteLine(Converted);
                             CLine++;
                             ConvertProgressBar.Value = (CLine / TLine) * 100 <= 100 ? Convert.ToInt32((CLine / TLine) * 100) : 100;
@@ -182,7 +238,7 @@ namespace Roughness
                     }
                 }
             }
-            catch(ThreadAbortException)
+            catch (ThreadAbortException)
             {
                 StopProcessing();
             }
@@ -249,14 +305,10 @@ namespace Roughness
         private void StartProcessing()
         {
             IsProcessing = true;
-            foreach (Control C in this.Controls)
-            {
-                if (C.GetType().Name.Equals("TextBox") || C.GetType().Name.Equals("Button"))
-                {
-                    C.Enabled = false;
-                    C.Cursor = Cursors.No;
-                }
-            }
+            ModeTabControl.Enabled = false;
+            ModeTabControl.Cursor = Cursors.No;
+            StartConvertButton.Enabled = false;
+            StartConvertButton.Cursor = Cursors.No;
             CancelConvertButton.Enabled = true;
             CancelConvertButton.Cursor = Cursors.Hand;
         }
@@ -265,14 +317,10 @@ namespace Roughness
         private void StopProcessing()
         {
             IsProcessing = false;
-            foreach (Control C in this.Controls)
-            {
-                if (C.GetType().Name.Equals("TextBox") || C.GetType().Name.Equals("Button"))
-                {
-                    C.Enabled = true;
-                    C.Cursor = Cursors.Hand;
-                }
-            }
+            ModeTabControl.Enabled = true;
+            ModeTabControl.Cursor = Cursors.Arrow;
+            StartConvertButton.Enabled = true;
+            StartConvertButton.Cursor = Cursors.Hand;
             CancelConvertButton.Enabled = false;
             CancelConvertButton.Cursor = Cursors.No;
         }
@@ -280,6 +328,21 @@ namespace Roughness
         private void ShowAuthor(object sender, EventArgs e)
         {
             MessageBox.Show("DEM转糙率程序，由Rikakoist制作。更多工具请访问https://github.com/Rikakoist。", "2333~", MessageBoxButtons.OK, MessageBoxIcon.Question);
+        }
+
+        private void ClickToDeleteRow(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                if (e.ColumnIndex == 1 && e.RowIndex < ValuesDataGridView.Rows.Count - 1)
+                {
+                    ValuesDataGridView.Rows.RemoveAt(e.RowIndex);
+                }
+            }
+            catch (Exception err)
+            {
+                MessageBox.Show(err.ToString());
+            }
         }
     }
 }
